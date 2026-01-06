@@ -1,100 +1,20 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أسهل - الرئيسية</title>
-    <link rel="manifest" href="manifest.json">
-    <style>
-        :root { --blue: #1e88e5; --green: #2e7d32; --bg-body: #f4f6f8; --red: #ff4d4d; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-body); padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        
-        .top-bar { width: 100%; max-width: 400px; height: 50px; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 15px; }
-        .logo { font-size: 28px; font-weight: bold; color: var(--green); text-align: center; }
-        
-        .header-icon { position: absolute; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: white; border: 1px solid #ddd; }
-        .settings-btn { right: 0; font-size: 18px; }
-        .logout-btn { left: 0; }
+<script>
+    // 1. فحص الأمان: إذا لم يسجل الدخول، اطرده لصفحة الدخول
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.replace("index.html");
+    }
 
-        .power-icon { width: 12px; height: 12px; border: 2px solid var(--red); border-radius: 50%; position: relative; border-top-color: transparent; }
-        .power-icon::before { content: ""; position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 2px; height: 6px; background-color: var(--red); }
+    // --- بقية الأكواد الخاصة بك لعرض الزبائن والبيانات تظل هنا ---
+    
+    let customers = JSON.parse(localStorage.getItem('customers')) || [];
+    // ... (كل الكود الخاص بك يوضع هنا) ...
 
-        .search-box { width: 100%; max-width: 400px; display: flex; gap: 8px; margin-bottom: 20px; }
-        .search-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; outline: none; }
-        .btn-icon { width: 48px; height: 48px; border-radius: 12px; border: none; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .add-btn { background-color: var(--green); }
-        .search-btn { background-color: var(--blue); }
-
-        .list-container { width: 100%; max-width: 400px; }
-        .cust-card { padding: 12px 15px; border-radius: 15px; margin-bottom: 10px; display: flex; flex-direction: column; cursor: pointer; background-color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .debt-style { border-right: 6px solid var(--blue); }
-        .pay-style { border-right: 6px solid var(--green); }
-        .card-top { display: flex; justify-content: space-between; align-items: center; }
-        .card-name { font-size: 17px; font-weight: bold; color: #333; margin-top: 5px; }
-        .card-amount { font-size: 20px; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
-        }
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
+    // 2. دالة تسجيل الخروج المعدلة
+    function logout() {
+        if (confirm("هل تريد تسجيل الخروج؟ سيطلب منك كلمة السر في المرة القادمة.")) {
+            // مسح علامة تسجيل الدخول
+            localStorage.removeItem('isLoggedIn');
             window.location.replace("index.html");
         }
-    </script>
-
-    <div class="top-bar">
-        <div class="header-icon settings-btn" onclick="window.location.href='settings.html'">⚙️</div>
-        <div class="logo">أسهل</div>
-        <div class="header-icon logout-btn" onclick="logout()"><div class="power-icon"></div></div>
-    </div>
-
-    <div class="search-box">
-        <button class="btn-icon add-btn" onclick="window.location.href='newz.html'">👤+</button>
-        <input type="text" id="searchInput" class="search-input" placeholder="ابحث..." oninput="search()">
-        <button class="btn-icon search-btn" onclick="search()">🔍</button>
-    </div>
-
-    <div id="results" class="list-container"></div>
-
-    <script>
-        function getCustomers() { return JSON.parse(localStorage.getItem('customers')) || []; }
-        
-        function search() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
-            
-            getCustomers().filter(c => c.name.toLowerCase().includes(query)).forEach(cust => {
-                const isDebt = cust.total > 0;
-                const card = document.createElement('div');
-                card.className = `cust-card ${isDebt ? 'debt-style' : 'pay-style'}`;
-                card.onclick = () => { 
-                    localStorage.setItem('currentCustomerId', cust.id); 
-                    window.location.href = 'customer_profile.html'; 
-                };
-                
-                // تم تنظيف علامات التنصيص المسببة للمشاكل هنا
-                card.innerHTML = `
-                    <div class="card-top">
-                        <span style="font-size:11px; color:#888;">${isDebt ? 'مدين' : 'خالص'}</span>
-                        <span style="color:${isDebt ? '#1e88e5' : '#2e7d32'}" class="card-amount">${Math.abs(cust.total).toLocaleString()}</span>
-                    </div>
-                    <div class="card-name">${cust.name}</div>
-                `;
-                resultsDiv.appendChild(card);
-            });
-        }
-
-        function logout() {
-            if (confirm("خروج؟")) {
-                localStorage.removeItem('isLoggedIn');
-                window.location.replace("index.html");
-            }
-        }
-        window.onload = search;
-    </script>
-</body>
-</html>
+    }
+</script>
