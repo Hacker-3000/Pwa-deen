@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملف الزبون - أسهل</title>
+    <style>
+        :root {
+            --blue: #5eb5f7; --green: #76b078; --bg: #f8f9fa; --red: #e57373;
+        }
+
+        body {
+            margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg); padding: 15px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* الهيدر المحدث */
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { font-size: 26px; cursor: pointer; text-decoration: none; color: #333; display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 12px; background: white; border: 1px solid #eee; }
+        
+        .name-container { display: flex; align-items: center; gap: 8px; }
+        #customer-name { font-size: 24px; font-weight: bold; color: #333; }
+        .edit-icon { cursor: pointer; font-size: 18px; color: #aaa; padding: 5px; }
+
+        /* المبلغ الكلي */
+        #total-display { font-size: 42px; font-weight: bold; margin: 20px 0; }
+        .blue-text { color: var(--blue) !important; }
+        .green-text { color: var(--green) !important; }
+
+        /* الأزرار الكبيرة */
+        .action-container { display: flex; gap: 15px; width: 100%; max-width: 400px; margin-bottom: 25px; }
+        .action-btn { 
+            flex: 1; height: 140px; border-radius: 25px; border: none; 
+            color: white; font-size: 24px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s;
+        }
+        .btn-debt { background-color: var(--blue); }
+        .btn-pay { background-color: var(--green); }
+        .action-btn:active { transform: scale(0.95); }
+
+        /* قسم السجل */
+        .history-section { width: 100%; max-width: 400px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .download-btn { background-color: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+
+        .card { background: white; padding: 15px; border-radius: 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .blue-card { border-right: 8px solid var(--blue); }
+        .green-card { border-right: 8px solid var(--green); }
+        
+        .card-top { display: flex; justify-content: space-between; align-items: center; }
+        .t-amt { font-size: 22px; font-weight: bold; }
+        .t-date { font-size: 10px; color: #aaa; text-align: left; margin-top: 5px; }
+
+        /* زر الحذف */
+        .delete-section { margin-top: 40px; width: 100%; max-width: 400px; text-align: center; margin-bottom: 20px; }
+        .delete-btn { background: none; border: 1px solid var(--red); color: var(--red); padding: 10px 20px; border-radius: 12px; cursor: pointer; font-size: 14px; opacity: 0.7; }
+
+        /* Modal النافذة */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 25% auto; padding: 30px; width: 85%; max-width: 320px; border-radius: 30px; text-align: center; }
+        input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 15px; box-sizing: border-box; font-size: 16px; outline: none; background: #fafafa; }
+        .save-btn { width: 100%; padding: 15px; background: #333; color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 18px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="home.html" class="back-btn">🔙</a>
+        <div class="name-container">
+            <div id="customer-name">...</div>
+            <span class="edit-icon" onclick="editCustomerName()">✏️</span>
+        </div>
+        <div style="width:45px"></div>
+    </div>
+
+    <div id="total-display">0.00</div>
+
+    <div class="action-container">
+        <button class="action-btn btn-debt" onclick="openModal('debt')">دين جديد</button>
+        <button class="action-btn btn-pay" onclick="openModal('pay')">دفع</button>
+    </div>
+
+    <div class="history-section">
+        <div class="history-header">
+            <span style="font-weight:bold; font-size:18px;">المعاملات السابقة</span>
+            <button class="download-btn" onclick="shareAsText()">تحميل</button>
+        </div>
+        <div id="history-list"></div>
+    </div>
+
+    <div class="delete-section">
+        <button class="delete-btn" onclick="deleteCustomer()">🗑️ حذف الزبون نهائياً</button>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">إضافة</h3>
+            <input type="number" id="modal-amount" placeholder="المبلغ" inputmode="decimal">
+            <textarea id="modal-note" placeholder="ملاحظة أو بيان"></textarea>
+            <button class="save-btn" onclick="saveTransaction()">حفظ المعاملة</button>
+            <p onclick="closeModal()" style="color:red; cursor:pointer; margin-top:20px; font-weight:bold;">إلغاء</p>
+        </div>
+    </div>
+
+    <script>
+        let currentId = localStorage.getItem('currentCustomerId');
+        let customers = JSON.parse(localStorage.getItem('customers')) || [];
+        let customer = customers.find(c => c.id == currentId);
+        let activeType = '';
+
+        function render() {
+            if (!customer) { window.location.href = 'home.html'; return; }
+            document.getElementById('customer-name').innerText = customer.name;
+            const totalDisplay = document.getElementById('total-display');
+            totalDisplay.innerText = Math.abs(customer.total).toFixed(2);
+            totalDisplay.className = customer.total > 0 ? 'blue-text' : 'green-text';
+
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            [...customer.history].reverse().forEach(t => {
+                const isDebt = t.type === 'debt';
+                list.innerHTML += `
+                    <div class="card ${isDebt ? 'blue-card' : 'green-card'}">
+                        <div class="card-top">
+                            <span style="font-weight:bold; font-size:13px; color:#666;">${isDebt ? 'دين (+)' : 'دفع (-)'}</span>
+                            <span class="t-amt ${isDebt ? 'blue-text' : 'green-text'}">${t.amount.toLocaleString()}</span>
+                        </div>
+                        <div style="margin-top:5px; font-size:15px; color:#444;">${t.comment || 'سجل حساب'}</div>
+                        <div class="t-date">${t.date}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function openModal(type) {
+            activeType = type;
+            document.getElementById('modal-title').innerText = type === 'debt' ? 'تسجيل دين جديد' : 'تسجيل دفع جديد';
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('modal-amount').focus();
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        function saveTransaction() {
+            const amt = parseFloat(document.getElementById('modal-amount').value);
+            const note = document.getElementById('modal-note').value;
+            if (amt > 0) {
+                customer.history.push({
+                    type: activeType, amount: amt, comment: note,
+                    date: new Date().toLocaleString('ar-EG')
+                });
+                customer.total += (activeType === 'debt' ? amt : -amt);
+                saveRefresh(); closeModal();
+                document.getElementById('modal-amount').value = '';
+                document.getElementById('modal-note').value = '';
+            }
+        }
+
+        function editCustomerName() {
+            const newName = prompt("تعديل اسم الزبون:", customer.name);
+            if (newName && newName.trim() !== "") {
+                customer.name = newName.trim();
+                saveRefresh();
+            }
+        }
+
+        function deleteCustomer() {
+            if (confirm(`حذف "${customer.name}"؟ سيتم مسح كافة البيانات ولا يمكن استرجاعها.`)) {
+                customers = customers.filter(c => c.id != currentId);
+                localStorage.setItem('customers', JSON.stringify(customers));
+                window.location.href = 'home.html';
+            }
+        }
+
+        function saveRefresh() {
+            localStorage.setItem('customers', JSON.stringify(customers));
+            render();
+        }
+
+        function shareAsText() {
+            let text = `سجل حساب: ${customer.name}\n`;
+            text += `الإجمالي: ${customer.total.toFixed(2)}\n`;
+            text += `---------------------------\n`;
+            customer.history.forEach((t, i) => {
+                text += `${i+1}) ${t.date} | ${t.type === 'debt' ? 'دين' : 'دفع'}: ${t.amount} (${t.comment || '-'})\n`;
+            });
+            if (navigator.share) {
+                navigator.share({ title: 'سجل الحساب', text: text });
+            } else {
+                alert("انسخ السجل:\n\n" + text);
+            }
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>

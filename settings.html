@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعدادات أسهل</title>
+    <style>
+        :root { --green: #2e7d32; --bg: #f4f6f8; --blue: #1e88e5; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .header { width: 100%; max-width: 400px; display: flex; align-items: center; margin-bottom: 25px; }
+        .back-btn { font-size: 24px; cursor: pointer; text-decoration: none; color: #333; margin-left: 15px; background: white; padding: 5px 12px; border-radius: 12px; border: 1px solid #ddd; }
+        
+        .card { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; box-sizing: border-box; }
+        
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; color: white; display: block; text-align: center; }
+        
+        .btn-export { background-color: var(--green); }
+        .btn-import { background-color: var(--blue); }
+        .btn-edit-acc { background-color: #555; margin-top: 10px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; text-align: center; }
+        .modal-content input, .modal-content select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-save { background: var(--green); flex: 1; color: white; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #ccc; flex: 1; color: #333; border: none; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="home.html" class="back-btn">→</a>
+        <h2 style="margin:0;">الإعدادات</h2>
+    </div>
+
+    <div class="card">
+        <button class="btn-action btn-export" onclick="exportJSON()">تصدير (نسخة احتياطية)</button>
+        <button class="btn-action btn-import" onclick="document.getElementById('importFile').click()">استيراد (استعادة بيانات)</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSONFile(this.files[0])" />
+        
+        <hr style="border:0; border-top: 1px solid #eee; margin: 15px 0;">
+        
+        <button class="btn-action btn-edit-acc" onclick="openModal()">⚙️ تعديل الحساب</button>
+    </div>
+
+    <div id="accModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">تعديل بيانات الحساب</h3>
+            <input type="password" id="new-pin" placeholder="كلمة السر الجديدة" inputmode="numeric">
+            <select id="security-q">
+                <option value="">اختر سؤال أمان</option>
+                <option value="ما هو اسم صديقك المفضل؟">ما هو اسم صديقك المفضل؟</option>
+                <option value="ما هي مدينتك المفضلة؟">ما هي مدينتك المفضلة؟</option>
+            </select>
+            <input type="text" id="security-a" placeholder="إجابة سؤال الأمان">
+            <div class="modal-btns">
+                <button class="btn-save" onclick="updateAccount()">حفظ</button>
+                <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'customers'; // مفتاح تخزين الزبائن
+
+        function openModal() { document.getElementById('accModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('accModal').style.display = 'none'; }
+
+        // دالة التصدير (نفس فكرة محلات الرفاعي)
+        function exportJSON() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY) || "[]";
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Easul_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                alert("تم تصدير النسخة الاحتياطية بنجاح.");
+            } catch (err) {
+                alert("حدث خطأ أثناء التصدير.");
+            }
+        }
+
+        // دالة الاستيراد (نفس فكرة محلات الرفاعي)
+        function importJSONFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const content = reader.result;
+                    JSON.parse(content); // التأكد من صحة التنسيق
+                    if (confirm("سيتم استبدال البيانات الحالية بالكامل. هل أنت متأكد؟")) {
+                        localStorage.setItem(STORAGE_KEY, content);
+                        alert("تم الاستيراد بنجاح! سيتم تحديث التطبيق.");
+                        window.location.replace("home.html");
+                    }
+                } catch (e) {
+                    alert("ملف غير صالح أو تالف.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // دالة تعديل الحساب
+        function updateAccount() {
+            const pin = document.getElementById('new-pin').value;
+            const q = document.getElementById('security-q').value;
+            const a = document.getElementById('security-a').value.trim();
+
+            if (pin.length >= 4 && q !== "" && a !== "") {
+                localStorage.setItem('userPin', pin);
+                localStorage.setItem('userQ', q);
+                localStorage.setItem('userA', a);
+                alert("تم تحديث بيانات الحساب بنجاح!");
+                closeModal();
+            } else {
+                alert("يرجى إكمال جميع الحقول (كلمة السر 4 أرقام على الأقل).");
+            }
+        }
+    </script>
+</body>
+</html>

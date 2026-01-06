@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أسهل - زبون جديد</title>
+    <style>
+        :root {
+            --primary-blue: #1e88e5;
+            --primary-dark-blue: #1565c0;
+            --secondary-green: #2e7d32;
+            --secondary-dark-green: #1b5e20;
+            --bg: #f4f6f8;
+            --white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #fafafa;
+            outline: none;
+        }
+
+        /* تنسيق أزرار الاختيار (دين / دفع) */
+        .type-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid transparent;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            opacity: 0.6; /* اللون باهت قبل الاختيار */
+        }
+
+        .btn-debt { background-color: var(--primary-blue); }
+        .btn-pay { background-color: var(--secondary-green); }
+
+        /* الشكل عند اختيار الزر */
+        .type-btn.active.btn-debt { 
+            opacity: 1; 
+            background-color: var(--primary-dark-blue); 
+            box-shadow: 0 0 10px rgba(21, 101, 192, 0.4);
+            border-color: #000;
+        }
+        
+        .type-btn.active.btn-pay { 
+            opacity: 1; 
+            background-color: var(--secondary-dark-green); 
+            box-shadow: 0 0 10px rgba(27, 94, 32, 0.4);
+            border-color: #000;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 18px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>إضافة زبون جديد</h2>
+    
+    <label>اسم الزبون</label>
+    <input type="text" id="custName" placeholder="أدخل الاسم بالكامل...">
+
+    <label>نوع المعاملة</label>
+    <div class="type-selector">
+        <button id="debtBtn" class="type-btn btn-debt" onclick="selectType('debt')">دين (+)</button>
+        <button id="payBtn" class="type-btn btn-pay" onclick="selectType('pay')">دفع (-)</button>
+    </div>
+
+    <label>المبلغ</label>
+    <input type="number" id="amount" placeholder="0.00">
+
+    <label>تعليق (اختياري)</label>
+    <textarea id="comment" rows="3" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+
+    <button class="save-btn" onclick="saveCustomer()">حفظ الزبون</button>
+    
+    <a href="home.html" class="back-link">إلغاء والرجوع للرئيسية</a>
+</div>
+
+<script>
+    let selectedType = '';
+
+    function selectType(type) {
+        selectedType = type;
+        // إزالة الكلاس النشط من الجميع
+        document.getElementById('debtBtn').classList.remove('active');
+        document.getElementById('payBtn').classList.remove('active');
+
+        // إضافة الكلاس للزر المضغوط
+        if(type === 'debt') {
+            document.getElementById('debtBtn').classList.add('active');
+        } else {
+            document.getElementById('payBtn').classList.add('active');
+        }
+    }
+
+    function saveCustomer() {
+        const name = document.getElementById('custName').value.trim();
+        const amount = parseFloat(document.getElementById('amount').value) || 0;
+        const comment = document.getElementById('comment').value.trim();
+
+        if (!name) { alert("يرجى إدخال اسم الزبون"); return; }
+        if (!selectedType) { alert("يرجى اختيار (دين) أو (دفع)"); return; }
+
+        // إنشاء كائن الزبون الجديد
+        const timestamp = new Date().toLocaleString('ar-EG');
+        const finalAmount = (selectedType === 'debt') ? amount : -amount;
+
+        const newCustomer = {
+            id: Date.now(), // معرف فريد باستخدام الوقت
+            name: name,
+            total: finalAmount,
+            history: [
+                {
+                    type: selectedType,
+                    amount: amount,
+                    comment: comment,
+                    date: timestamp
+                }
+            ]
+        };
+
+        // الحفظ محلياً في localStorage
+        let customers = JSON.parse(localStorage.getItem('customers')) || [];
+        customers.push(newCustomer);
+        localStorage.setItem('customers', JSON.stringify(customers));
+
+        // محاكاة المزامنة مع قاعدة البيانات والسحاب
+        console.log("تم الحفظ محلياً وجاهز للمزامنة السحابية:", newCustomer);
+
+        alert("تم حفظ الزبون بنجاح!");
+        window.location.href = 'home.html';
+    }
+</script>
+
+</body>
+</html>

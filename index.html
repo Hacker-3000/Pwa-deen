@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أسهل - تسجيل الدخول</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --green: #2e7d32; --bg: #f4f6f8; --red: #ff4d4d; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg); display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { width: 90%; max-width: 350px; background: white; padding: 30px 20px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+        .logo { font-size: 40px; font-weight: bold; color: var(--green); margin-bottom: 10px; }
+        input, select { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 15px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
+        .btn { width: 100%; padding: 15px; background: var(--green); color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .info { font-size: 14px; color: #666; margin-bottom: 15px; }
+        .forgot-link { color: var(--red); cursor: pointer; display: none; margin-top: 15px; font-weight: bold; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="setup-card" style="display: none;">
+        <div class="logo">أسهل</div>
+        <div class="info">إعداد الحماية لأول مرة</div>
+        <input type="password" id="new-pin" placeholder="تعيين كلمة سر (أرقام)" inputmode="numeric">
+        <select id="security-q">
+            <option value="">اختر سؤال أمان</option>
+            <option value="ما هو اسم صديقك المفضل؟">ما هو اسم صديقك المفضل؟</option>
+            <option value="ما هي مدينتك المفضلة؟">ما هي مدينتك المفضلة؟</option>
+        </select>
+        <input type="text" id="security-a" placeholder="إجابة سؤال الأمان">
+        <button class="btn" onclick="setupAccount()">حفظ وإعداد</button>
+    </div>
+
+    <div class="card" id="login-card" style="display: none;">
+        <div class="logo">أسهل</div>
+        <div class="info">أدخل كلمة السر</div>
+        <input type="password" id="login-pin" placeholder="****" inputmode="numeric">
+        <button class="btn" onclick="checkLogin()">دخول</button>
+        <div id="forgot-btn" class="forgot-link" onclick="showRecovery()">نسيت كلمة السر؟</div>
+    </div>
+
+    <div class="card" id="recovery-card" style="display: none;">
+        <div class="logo">استعادة</div>
+        <div id="display-q" class="info"></div>
+        <input type="text" id="recovery-a" placeholder="أدخل الإجابة">
+        <button class="btn" onclick="recoverAccount()">تحقق</button>
+    </div>
+
+    <script>
+        // تسجيل الـ Service Worker لتفعيل PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('تم تفعيل التطبيق بنجاح'))
+                .catch(err => console.log('خطأ في التفعيل', err));
+            });
+        }
+
+        let attempts = 0;
+        const savedPin = localStorage.getItem('userPin');
+        const savedQ = localStorage.getItem('userQ');
+        const savedA = localStorage.getItem('userA');
+
+        window.onload = function() {
+            if (!savedPin) {
+                document.getElementById('setup-card').style.display = 'block';
+            } else {
+                document.getElementById('login-card').style.display = 'block';
+            }
+        };
+
+        function setupAccount() {
+            const pin = document.getElementById('new-pin').value;
+            const q = document.getElementById('security-q').value;
+            const a = document.getElementById('security-a').value.trim();
+            if (pin.length >= 4 && q !== "" && a !== "") {
+                localStorage.setItem('userPin', pin);
+                localStorage.setItem('userQ', q);
+                localStorage.setItem('userA', a);
+                localStorage.setItem('isLoggedIn', 'true');
+                window.location.replace("home.html");
+            } else { alert("يرجى إكمال البيانات"); }
+        }
+
+        function checkLogin() {
+            const pin = document.getElementById('login-pin').value;
+            if (pin === savedPin) {
+                localStorage.setItem('isLoggedIn', 'true');
+                window.location.replace("home.html");
+            } else {
+                attempts++;
+                alert("كلمة السر خاطئة!");
+                if (attempts >= 3) document.getElementById('forgot-btn').style.display = 'block';
+            }
+        }
+
+        function showRecovery() {
+            document.getElementById('login-card').style.display = 'none';
+            document.getElementById('recovery-card').style.display = 'block';
+            document.getElementById('display-q').innerText = savedQ;
+        }
+
+        function recoverAccount() {
+            const answer = document.getElementById('recovery-a').value.trim();
+            if (answer === savedA) {
+                alert("كلمة السر هي: " + savedPin);
+                location.reload();
+            } else { alert("الإجابة غير صحيحة"); }
+        }
+    </script>
+</body>
+</html>
